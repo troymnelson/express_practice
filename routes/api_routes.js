@@ -1,7 +1,23 @@
 const router = require('express').Router();
 const fs = require('fs');
 const path = require('path');
+const mysql = require('mysql2');
 const dbPath = path.join(__dirname, '../db/todos.json');
+
+const connection = mysql.createPool({
+    host: 'localhost',
+    database: 'express_practice',
+    user: 'root',
+    password: ''
+});
+
+
+connection.query('SELECT * FROM todos', (err, data) => {
+    if (err) return console.log (err);
+
+    console.log(data);
+});
+
 
 const writeFile = (todo, res) => {
     fs.promises.writeFile(dbPath, JSON.stringify(todo, null, 2))
@@ -12,37 +28,28 @@ const writeFile = (todo, res) => {
 };
 
 
+// read from file db.json
 const getTodoData = () => {
     return fs.promises.readFile(dbPath, 'utf8')
-        .then(data => JSON.parse(data));
+        .then(data => JSON.parse(data)); // parse data from json
 };
 
 
 router.get('/todos', (req, res) => {
-    getTodoData()
-        .then(todo_data => {
-            res.json(todo_data);
-        }).catch(err => {
-            if (err) return console.log(err);
-        });
-
+    connection.query('SELECT * FROM todos', (err, data) => {
+        if (err) return console.log (err);
+    
+        res.json(data);
+    });
 });
 
 
 router.post('/todos', (req, res) => {
-    getTodoData()
-        .then(todo_data => {
-            const new_todo_data = req.body;
+    connection.query(`INSERT INTO todos SET ?`, req.body, (err, data) => {
+        if(err) return console.log(err);
 
-            const refId = todo_data.length ? todo_data[todo_data.length - 1].id : 0;
-
-            new_todo_data.id = refId + 1;
-
-            todo_data.push(new_todo_data);
-
-            writeFile(todo_data, res);
-
-        });
+        console.log(data);
+    })
 });
 
 

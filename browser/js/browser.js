@@ -13,7 +13,7 @@ const outputToDos = (data) => {
     data.forEach((currObj, currIndex) => {
         const html = `
             <div class="todo">
-                <h3>${currObj.text}</h3>
+                <h3>${currObj.words}</h3>
                 <button data-id="${currObj.id}">Delete</button>
             </div>
         `;
@@ -34,7 +34,7 @@ const addTodo = (event) => {
     event.preventDefault();
     const value = input.value;
     const data = {
-        text: value
+        words: value
     }
 
 
@@ -48,7 +48,8 @@ const addTodo = (event) => {
     }).then(res => res.json())
         .then(todos => {
             input.value = '';
-            outputToDos(todos);
+            getTodos()
+                .then(outputToDos(todos));
         });
 };
 
