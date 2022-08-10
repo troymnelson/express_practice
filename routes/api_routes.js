@@ -1,70 +1,41 @@
-const router = require('express').Router();
-const fs = require('fs');
-const path = require('path');
-const mysql = require('mysql2');
-const dbPath = path.join(__dirname, '../db/todos.json');
+const todo_router = require('express').Router();
+const db = require('../db/connection');
 
-const connection = mysql.createPool({
-    host: 'localhost',
-    database: 'express_practice',
-    user: 'root',
-    password: ''
+
+// Get All Todos
+// localhost:3333/api/todos
+todo_router.get('/todos', (request, response) => {
+  db.query('SELECT * FROM todos', (err, data) => {
+    if (err) return console.log(err);
+
+    response.json(data);
+  });
 });
 
+// Create Todo
+todo_router.post('/todos', (request, response) => {
+  db.query(`INSERT INTO todos SET ?`, request.body, (err, data) => {
+    if (err) return console.log(err);
 
-connection.query('SELECT * FROM todos', (err, data) => {
-    if (err) return console.log (err);
-
-    console.log(data);
-});
-
-
-const writeFile = (todo, res) => {
-    fs.promises.writeFile(dbPath, JSON.stringify(todo, null, 2))
-    .then(() => {
-        console.log('Todo updated successfully!')
-        res.json(todo);
-    }).catch((err) => console.log(err));
-};
-
-
-// read from file db.json
-const getTodoData = () => {
-    return fs.promises.readFile(dbPath, 'utf8')
-        .then(data => JSON.parse(data)); // parse data from json
-};
-
-
-router.get('/todos', (req, res) => {
-    connection.query('SELECT * FROM todos', (err, data) => {
-        if (err) return console.log (err);
-    
-        res.json(data);
+    response.json({
+      id: data.insertId,
+      message: 'Todo added successfully!'
     });
+  });
+});
+
+// localhost:3333/api/todos - DELETE request
+todo_router.delete('/todos', (request, response) => {
+  const id = request.body.id;
+
+  db.query('DELETE FROM todos WHERE id = ?', id, (err, info) => {
+    if (err) return console.log(err);
+
+    response.json({
+      message: `Todo with id of ${id} has been deleted successfully.`
+    });
+  })
 });
 
 
-router.post('/todos', (req, res) => {
-    connection.query(`INSERT INTO todos SET ?`, req.body, (err, data) => {
-        if(err) return console.log(err);
-
-        console.log(data);
-    })
-});
-
-
-router.delete('/todos', (req, res) => {
-    getTodoData()
-        .then(todos => {
-            const id = req.body.id;
-            const obj = todos.find(todo => todo.id === id);
-            const index = todos.indexOf(obj);
-
-            todos.splice(index, 1);
-
-            writeFile(todos, res);
-        });
-});
-
-module.exports = router;
-
+module.exports = todo_router;
